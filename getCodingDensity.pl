@@ -22,6 +22,9 @@ use strict;
 use Bio::SeqIO;
 use Getopt::Long;
 
+die "usage: getCodingDensity.pl -g|gbk [.gbk] -f|features [CDS,rRNA,tRNA]\n" unless @ARGV == 4;
+
+
 my ($gbk,$fts);
 GetOptions('g|gbk=s'      => \$gbk,
 	   'f|features=s' => \$fts);
@@ -54,7 +57,6 @@ while (my $seq = $in->next_seq) {
     	next unless ($ft->primary_tag ~~ @fts);
 
 	## count coding sites
-
 	# if CDS spans ori
 	if ( $ft->location->isa('Bio::Location::SplitLocationI') ) {
 	    for my $loc ( $ft->location->sub_Location ) {
