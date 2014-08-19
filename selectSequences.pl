@@ -7,8 +7,11 @@
 =head1 USAGE
 
 selectSequences.pl -i [fasta-in] -l [list] -q [query(ies)] > [fasta-out]
+
 Either use -l or -q
+
 -q Query can be partial of sequence header
+
 -l Query has to be exactly the same as sequence header
 
 =cut 
@@ -42,6 +45,7 @@ if ($queries) {
 	# print $id, "\n";
 	
 	foreach my $query (@queries){
+	    # print $query, "\n";
 	    if ($id =~ m/$query/){
 	    	$count++;
 	    	$out->write_seq($seq);

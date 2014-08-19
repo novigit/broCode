@@ -3,7 +3,9 @@
 =head1 USAGE
 
 getIntergenicSpace.pl -g|gbk [.gbk] -f|features [comma separated features]
+
 EXAMPLE
+
 getIntergenicSpace.pl -g Holospora_undulata_HU1.gbk -f CDS,rRNA,tRNA
 
 =head1 SYNOPSIS
@@ -26,6 +28,8 @@ Joran Martijn (joran.martijn@icm.uu.se) with help of Guilleaume Reboul.
 use strict;
 use Bio::SeqIO;
 use Getopt::Long;
+
+die "usage: getIntergenicSpace.pl -g|gbk [.gbk] -f|features [comma separated features]\n" unless @ARGV >= 4;
 
 my ($gbk,$fts);
 GetOptions('g|gbk=s'      => \$gbk,
@@ -50,6 +54,9 @@ while ( my $seq = $in->next_seq) {
     my ($init_start, $init_end);
     my $trim_ctg_size;
     my $contig_size;
+
+    # skip contigs without features (only feature is 'source')
+    next if ($seq->feature_count == 1);
 
     # loop over features
     for my $ft ($seq->get_SeqFeatures) {

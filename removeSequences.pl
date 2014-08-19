@@ -28,7 +28,7 @@ die "usage: removeSequences.pl [fasta-in] [seq1] [seq2] [etc] > [fasta-out]\n" u
 
 my ($fa, @queries) = @ARGV;
 
-my $in  = Bio::SeqIO->new(-format => 'fasta',
+my $in  = Bio::SeqIO->new(-format => 'fastq',
 			  -file   => $fa);
 my $out = Bio::SeqIO->new(-format => 'fasta',
 			  -fh     => \*STDOUT);
