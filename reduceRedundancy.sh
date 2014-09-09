@@ -1,40 +1,56 @@
 #!/bin/bash
 
-## this minipipeline aims to reduce the redundancy of a sequence dataset ##
-## using UCLUST ##
+## SYNOPSIS: ##
+# this minipipeline aims to reduce the redundancy of a sequence dataset #
+# using UCLUST                                                          #
 
-# usage: #
-# $1 = [in -fasta] #
-# $2 = [out-dir  ] #
-# $3 = [identity ] #
+# state usage
+function usage() {
+    echo "Usage: reduceRedundancy.sh -i [in.fasta] -o [out.fasta] -p [perc_id] -d [out_dir]"
+    exit
+}
 
-# announce parameters 
-echo "FASTA    = $1"
-echo "OUTDIR   = $2"
-echo "IDENTITY = $3"
+if [ $# -lt 8 ]; then
+    usage
+fi
+
+# state options
+while getopts ":i:o:p:d:" opt; do
+    case $opt in
+	i) inp=${OPTARG}
+	   seq=$(basename $inp .fasta);;
+	o) out=${OPTARG};;
+	p) idt=${OPTARG};;
+	d) dir=${OPTARG};;
+	*) usage ;;
+    esac
+done
 
 # announce start pipeline
-echo "####### Clustering ..." $1 "#######"
+echo "####### Clustering ..." $inp "#######"
 
-SEQ=$(basename $1 .fasta)
-
+mkdir $dir
 # sort
 uclust \
-    --sort $1 \
-    --output ${2}/${SEQ}-sort.fasta 
+    --sort $inp \
+    --output $dir/$seq-sort.fasta 
 
-# clust    
+# cluster
 uclust \
-    --input ${2}/${SEQ}-sort.fasta \
-    --uc ${2}/${SEQ}-sort.uc \
-    --id $3
+    --input $dir/$seq-sort.fasta \
+    --uc $dir/$seq-sort.uc \
+    --id $idt \
+    --optimal \
+    --fastapairs $dir/$seq-aln.fasta
 
 # extract seed sequence
 uclust \
-    --uc2fasta ${2}/${SEQ}-sort.uc \
-    --input ${2}/${SEQ}-sort.fasta \
-    --output ${2}/${SEQ}-prnd.fasta \
+    --uc2fasta $dir/$seq-sort.uc \
+    --input $dir/$seq-sort.fasta \
+    --output $dir/$out \
     --types S 
 
-# announce done
+# edit fasta headers
+sed -i -r "/^>/ s/[0-9]+\|\*\|//" $dir/$out-prnd.fasta
+
 echo "####### Done ########"
