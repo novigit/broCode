@@ -1,20 +1,28 @@
 #!/usr/bin/perl
 
-# Script will extract gene based on a identifier in the header, can be gi, organism name or whatever
-# By Anders Lind, edited by Joran Martijn
-# Opposite of removeSequences.pl
+=head1 NAME
+
+    selectSequences.pl - extract or remove sequences from a FASTA file
 
 =head1 USAGE
 
-selectSequences.pl -i [fasta-in] -l [list] -q [query(ies)] > [fasta-out]
+    selectSequences.pl -i|--fasta [in_fasta] -l|--list [query_list] -q|--queries [query1,query2,query3,etc] -m|--mode [extract|remove] > [out_fasta]
 
-Either use -l or -q
+    Use -l or -q
+    -q: Query can be a partial match of sequence header
+    -l: Query has to be exactly the same as sequence header
 
--q Query can be partial of sequence header
+=head1 DESCRIPTION
 
--l Query has to be exactly the same as sequence header
+    Extracts a sequence or sequences of interest from a FASTA file.
+    The user provides a query or list of queries.
+    A query does not have to be an exact match to fasta header, partial works.
 
-=cut 
+=head1 AUTHOR
+
+    Joran Martijn (joran.martijn@icm.uu.se)
+
+=cut
 
 use strict;
 use warnings;
@@ -22,67 +30,66 @@ use Bio::SeqIO;
 use Getopt::Long;
 use Pod::Usage;
 
-pod2usage (-message => "Not enough arguments") unless @ARGV >= 4;
+pod2usage (-msg => "Not enough arguments") unless @ARGV >= 6;
 
-my ($fasta, $list, $queries);
+my ($fasta, $list, $queries, $mode);
 GetOptions("i|fasta=s"   => \$fasta,
 	   "l|list=s"    => \$list,
-	   "q|queries=s" => \$queries);
+	   "q|queries=s" => \$queries,
+	   "m|mode=s"    => \$mode);
 
 my $in  = Bio::SeqIO->new(-format => 'fasta',
 			  -file   => $fasta);
 my $out = Bio::SeqIO->new(-format => 'fasta',
 			  -fh     => \*STDOUT);
 
+# If '-q|--queries' was used, create @queries
+my @queries;
 if ($queries) {
-    
-    my @queries = split(/,/, $queries);
-    my $count = 0;
-
-    while (my $seq = $in->next_seq) {
-    	my $id = $seq->id;
-    	$id .= $seq->desc;
-	# print $id, "\n";
-	
-	foreach my $query (@queries){
-	    # print $query, "\n";
-	    if ($id =~ m/$query/){
-	    	$count++;
-	    	$out->write_seq($seq);
-	    }
-	}
-    }
-
-# Rewrite this part
-    foreach my $query (@queries){
-	print STDERR "Could not find any headers containing $query\n" if $count == 0;
-	print STDERR "Found $count header(s) containing $query\n"     if $count > 0;
-    }
-
+    @queries = split(/,/, $queries);
 }
-
+# If '-l|--list'    was used, create %queries
+my %queries;
 if ($list) {
-    my %hash;
-    
     open LIST, "<$list";
     while (<LIST>) {
 	chomp;
 	my $query = $_;
-	# print $query, "\n";
-	$hash{$query}++;
+	$queries{$query}++;
     }
     close LIST;
-    
-    while (my $seq = $in->next_seq) {
-    	my $id = $seq->id;
-    	$id .= $seq->desc;
-    	# print $id, "\n";
-    	# $out->write_seq($seq) if (exists $hash{$id});
-	
-    	my $print = 0;
-    	foreach my $query (keys %hash) {
-    	    $print = 1 if ($id =~ m/$query/);
-    	}
-    	$out->write_seq($seq) if $print;
+}
+
+# State global $print
+my $print;
+
+while (my $seq = $in->next_seq) {
+    my $id = $seq->id;
+    $id .= $seq->desc;
+
+    # if 'extract' mode, no  sequence  is  printed by default
+    $print = 0 if ($mode eq 'extract');
+    # if 'remove'  mode, all sequences are printed by default
+    $print = 1 if ($mode eq 'remove' );
+
+    # switch print 'on' or 'off' if query matches a sequence header
+    print_switch(      \@queries  , $id, $mode) if ($queries);
+    print_switch([ keys %queries ], $id, $mode) if ($list)   ;
+
+    # write sequence if print is 'on' 
+    $out->write_seq($seq) if $print;
+}
+
+sub print_switch {
+    my ($var, $id, $mode) = @_;
+
+    # '@$var' either returns '@queries' or 'keys %queries'
+    foreach my $query (@$var){
+
+	# turn print 'on'  if query matches sequence header if 'extract' mode
+	$print = 1 if ($id =~ m/$query/ && $mode eq 'extract');
+	# turn print 'off' if query matches sequence header if 'remove'  mode
+	$print = 0 if ($id =~ m/$query/ && $mode eq 'remove' );
     }
+    return $print;
 }
