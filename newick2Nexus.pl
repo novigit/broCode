@@ -5,11 +5,11 @@ use Getopt::Long;
 use File::Temp qw/ tempfile tempdir /;
 =head1 NAME
 
-    newick2nexus.pl
+    newick2Nexus.pl
 
 =head1 USAGE
 
-    newick2nexus.pl -i|--infile [.newick] > [.nexus]
+    newick2Nexus.pl -i|--infile <.newick> > <.nexus>
     
     -i|--infile  COMPULSORY   The newick-file you want to convert
     -r           OPTIONAL     Convert '-' into '_' in your newick-file

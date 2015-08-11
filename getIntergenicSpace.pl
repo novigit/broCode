@@ -1,35 +1,41 @@
 #!/usr/bin/perl -w
 
+=head1 NAME
+
+    getIntergenicSpace.pl - Estimates average intergenic space length of a given genome using its genbank file.
+
 =head1 USAGE
 
-getIntergenicSpace.pl -g|gbk [.gbk] -f|features [comma separated features]
+    getIntergenicSpace.pl -g|gbk [.gbk] -f|features [comma separated features] > [report.out]
 
-EXAMPLE
+=head1 DESCRIPTION
 
-getIntergenicSpace.pl -g Holospora_undulata_HU1.gbk -f CDS,rRNA,tRNA
+    Estimates the average intergenic space length of a given genome.
+    Works also if genome is in draft state (that is: multiple contigs).
+    Does not incorporate ORI spanning region
 
-=head1 SYNOPSIS
+    In case of multiple contigs, the contig edges that are not coding will not be taken into account for calculating the intergenic regions.
+    So only intergenic regions are used of which we know how big they are.
+    Non coding contig edges we are not sure how big they are and can thus not be used in the calculation.
 
-Estimates the average intergenic space length of a given genome. 
-Works also if genome is in draft state (that is: multiple contigs).
-Does not incorporate ORI spanning region
+    In case of overlapping coding regions the size of the overlap will NOT be substracted from the total intergenic region length.
 
-In case of multiple contigs, the contig edges that are not coding will not be taken into account for calculating the intergenic regions.
-So only intergenic regions are used of which we know how big they are. Non coding contig edges we are not sure how big they are and can thus not be used in the calculation.
+=head1 EXAMPLE
 
-In case of overlapping coding regions the size of the overlap will NOT be substracted from the total intergenic region length.
+    getIntergenicSpace.pl -g Holospora_undulata_HU1.gbk -f CDS,rRNA,tRNA > Holospora_intergenicSpace.report
 
 =head1 AUTHOR
 
-Joran Martijn (joran.martijn@icm.uu.se) with help of Guilleaume Reboul.
+    Joran Martijn (joran.martijn@icm.uu.se) with help of Guilleaume Reboul.
 
 =cut
 
 use strict;
 use Bio::SeqIO;
 use Getopt::Long;
+use Pod::Usage;
 
-die "usage: getIntergenicSpace.pl -g|gbk [.gbk] -f|features [comma separated features]\n" unless @ARGV >= 4;
+pod2usage (-msg => "Not enough arguments")  unless @ARGV >= 4;
 
 my ($gbk,$fts);
 GetOptions('g|gbk=s'      => \$gbk,
@@ -48,7 +54,7 @@ my $total_intergenic_region_count = 0;
 
 # loop over contigs
 while ( my $seq = $in->next_seq) {
-    
+
     my %coding_sites;
     my $ft_count = 0;
     my ($init_start, $init_end);
@@ -75,7 +81,7 @@ while ( my $seq = $in->next_seq) {
 	my ($coding_start, $coding_end) = ($ft->start, $ft->end);
 	for (my $i = $coding_start; $i <= $coding_end; $i++) {
 		$coding_sites{$i}++;
-	    }
+	}
 
 	# store coding feature start and end
 	$init_start = $ft->start if ($ft_count == 1);
@@ -95,7 +101,7 @@ while ( my $seq = $in->next_seq) {
     my $start = $init_start;
     my $end   = $init_end;
 
-    # # Calculate "trimmed" contig length
+    # Calculate "trimmed" contig length
     $trim_ctg_size = $end - $start;
 
     # Add "trimmed" contig size to total "trimmed" genome size
@@ -113,8 +119,8 @@ my $total_non_coding = $trim_genome_size - $total_coding;
 my $avg_intergenic_region_size = $total_non_coding / $total_intergenic_region_count;
 
 # Print results
-print "TOTAL CODING", "\t", $total_coding, "\n";
-print "TOTAL NONCODING", "\t", $total_non_coding, "\n";
-print "TOTAL TRIMMED GENOME LENGTH", "\t", $trim_genome_size, "\n";
-print "TOTAL GENOME LENGTH", "\t", $total_genome_size,"\n";
-print "AVERAGE INTERGENIC SPACE LENGTH:", "\t", $avg_intergenic_region_size, "\n";
+print "TOTAL CODING:", "\t", $total_coding, "\n";
+print "TOTAL NONCODING:", "\t", $total_non_coding, "\n";
+print "TOTAL TRIMMED GENOME LENGTH:", "\t", $trim_genome_size, "\n";
+print "TOTAL GENOME LENGTH:", "\t", $total_genome_size,"\n";
+print "AVERAGE INTERGENIC SPACE LENGTH:", "\t"; printf("%.3f", $avg_intergenic_region_size); print "\n";

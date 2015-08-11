@@ -6,7 +6,7 @@
 
 # state usage
 function usage() {
-    echo "Usage: ssuPhylogeny.sh -i [in_fasta] -o [out_tree_name] -d [sina: reference_database] -g [trimal: gap_threshold] -f [figtree_block] -c [color_dictionary] -t [raxml: threads]"
+    echo "Usage: ssuPhylogeny.sh -i <in_fasta> -o <out_tree_name> -d <sina: reference_database> -g <trimal: gap_threshold> -f <figtree_block> -c <color_dictionary> -t <raxml: threads>"
     exit
 }
 
@@ -36,7 +36,7 @@ echo -e "###### Start SSU Phylogeny Pipeline for sequences" $inp "######" "\n"
 echo -e "\n###### Start SINA alignment ######\n"
 # align with SINA
 mkdir sina
-sina \
+/home/jmartijn/tools/sina-1.2.11/sina \
     -i $inp \
     -o sina/${seq}.aln \
     --ptdb $dtb \
@@ -45,7 +45,7 @@ sina \
 echo -e "\n###### Start TRIMAL trim ######\n"
 # trim with TRIMAL
 mkdir trimal
-trimal \
+/home/jmartijn/tools/trimAl-1.4/source/trimal \
     -in sina/${seq}.aln \
     -out trimal/${seq}-trim.phy \
     -gt $gpt \
@@ -55,7 +55,7 @@ echo -e "\n###### Start RAXML phylogeny ######\n"
 # infer phylogeny with raxml
 mkdir raxml
 pwd=$(pwd)
-raxmlHPC-PTHREADS-SSE3 \
+/home/jmartijn/tools/raxml-7.2.8-alpha/raxmlHPC-PTHREADS-SSE3 \
     -f a -x 12345 -p 12345 -N 100 \
     -m GTRGAMMA \
     -s trimal/${seq}-trim.phy \

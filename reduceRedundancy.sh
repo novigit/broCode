@@ -6,22 +6,21 @@
 
 # state usage
 function usage() {
-    echo "Usage: reduceRedundancy.sh -i [in.fasta] -o [out.fasta] -p [perc_id] -d [out_dir]"
+    echo "Usage: reduceRedundancy.sh -i <in.fasta> -o <out.fasta> -p <perc_id>"
     exit
 }
 
-if [ $# -lt 8 ]; then
+if [ $# -lt 6 ]; then
     usage
 fi
 
 # state options
-while getopts ":i:o:p:d:" opt; do
+while getopts ":i:o:p:" opt; do
     case $opt in
 	i) inp=${OPTARG}
 	   seq=$(basename $inp .fasta);;
 	o) out=${OPTARG};;
 	p) idt=${OPTARG};;
-	d) dir=${OPTARG};;
 	*) usage ;;
     esac
 done
@@ -29,28 +28,28 @@ done
 # announce start pipeline
 echo "####### Clustering ..." $inp "#######"
 
-mkdir $dir
 # sort
 uclust \
     --sort $inp \
-    --output $dir/$seq-sort.fasta 
+    --output ${seq}-sort.fasta 
 
 # cluster
 uclust \
-    --input $dir/$seq-sort.fasta \
-    --uc $dir/$seq-sort.uc \
+    --input ${seq}-sort.fasta \
+    --uc ${seq}-sort.uc \
     --id $idt \
-    --optimal \
-    --fastapairs $dir/$seq-aln.fasta
+#    --optimal
 
 # extract seed sequence
 uclust \
-    --uc2fasta $dir/$seq-sort.uc \
-    --input $dir/$seq-sort.fasta \
-    --output $dir/$out \
+    --uc2fasta ${seq}-sort.uc \
+    --input ${seq}-sort.fasta \
+    --output $out \
     --types S 
 
-# edit fasta headers
-sed -i -r "/^>/ s/[0-9]+\|\*\|//" $dir/$out-prnd.fasta
+# edit fasta headers and remove intermediate files
+rm ${seq}-sort.uc
+rm ${seq}-sort.fasta
+sed -i -r "/^>/ s/[0-9]+\|\*\|//" $out
 
 echo "####### Done ########"

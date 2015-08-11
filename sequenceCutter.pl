@@ -47,7 +47,7 @@ while ( my $seq = $in->next_seq ) {
 	$out->write_seq($subseq_obj);
     }
     # print all other sequences without edit
-    else {
-    	$out->write_seq($seq);
-    }
+    # else {
+    # 	$out->write_seq($seq);
+    # }
 }

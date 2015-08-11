@@ -1,29 +1,41 @@
 #!/usr/bin/perl -w
 
+=head1 NAME
+
+    getCodingDensity.pl - estimates coding density of a sequence using its genbank file
+
 =head1 USAGE
 
-getCodingDensity.pl -g|gbk [.gbk] -f|features [comma separated features]
-EXAMPLE
-getCodingDensity.pl -g Holospora_undulata_HU1.gbk -f CDS,rRNA,tRNA
+    getCodingDensity.pl -g|gbk [.gbk] -f|features [comma separated features] > [report.out]
 
-=head1 SYNOPSIS
+=head1 DESCRIPTION
 
-Estimates the coding density of a genome using its genbank file.
-Works also when there are multiple contigs within the genbank file.
-Incorporates also ori spanning features.
+    Estimates the coding density of a sequence using its genbank file.
+    Works also when there are multiple contigs within the genbank file.
+    Incorporates also ori spanning features.
+
+=head1 EXAMPLE
+
+    getCodingDensity.pl -g Holospora_undulata_HU1.gbk -f CDS,rRNA,tRNA > Holospora_codingDensity.report
+
+=head1 TODO
+
+    Script is still quite ineffecient.
+    Will load regions that code for multiple coding features (for example overlapping CDS) multiple times in the hash.
+    This should be in principle unnecessary.
 
 =head1 AUTHOR
 
-Joran Martijn (joran.martijn@icm.uu.se)
+    Joran Martijn (joran.martijn@icm.uu.se)
 
-=cut 
+=cut
 
 use strict;
 use Bio::SeqIO;
 use Getopt::Long;
+use Pod::Usage;
 
-die "usage: getCodingDensity.pl -g|gbk [.gbk] -f|features [CDS,rRNA,tRNA]\n" unless @ARGV == 4;
-
+pod2usage (-msg => "Not enough arguments") unless @ARGV == 4;
 
 my ($gbk,$fts);
 GetOptions('g|gbk=s'      => \$gbk,
@@ -39,14 +51,14 @@ my $total_genome_size = 0;
 my $contig_count = 0;
 
 while (my $seq = $in->next_seq) {
-    
+
     # declare data structures
     my %coding_sites;
     my $contig_size;
 
     # add 1 to contig count
     $contig_count++;
-    
+
     # loop over features of first contig
     for my $ft ($seq->get_SeqFeatures) {
 
@@ -54,7 +66,7 @@ while (my $seq = $in->next_seq) {
 	$contig_size = $ft->end() if ($ft->primary_tag eq 'source');
 
 	# skip all non-coding features
-    	next unless ($ft->primary_tag ~~ @fts);
+	next unless ($ft->primary_tag ~~ @fts);
 
 	## count coding sites
 	# if CDS spans ori
@@ -64,13 +76,13 @@ while (my $seq = $in->next_seq) {
 		my ($start, $end) = ($loc->start, $loc->end);
 		for (my $i = $start; $i <= $end; $i++) {
 		    $coding_sites{$i}++;
-		} 		
+		}
 
 	    }
 	}
 
 	# all other CDSs
-	else {   
+	else {
 	    # print $start, "\t", $end, "\n";
 	    my ($start, $end) = ($ft->start, $ft->end);
 	    for (my $i = $start; $i <= $end; $i++) {
@@ -79,7 +91,7 @@ while (my $seq = $in->next_seq) {
 	}
 
     }
-    
+
     # add number of coding sites of first contig to total count
     my $coding = scalar keys %coding_sites;
     $total_coding += $coding;
@@ -89,9 +101,7 @@ while (my $seq = $in->next_seq) {
 
 }
 
-print "NUMBER OF CONTIGS: ", $contig_count, "\n";
-print "CODING: ", $total_coding, "\n";
-print "GENOME SIZE: ", $total_genome_size, "\n";
-print "CODING DENSITY: "; printf("%.3f", $total_coding / $total_genome_size); print "\n";
-
-# 
+print "NUMBER OF CONTIGS: ", "\t", $contig_count, "\n";
+print "CODING: ", "\t", $total_coding, "\n";
+print "GENOME SIZE: ", "\t", $total_genome_size, "\n";
+print "CODING DENSITY: ", "\t"; printf("%.3f", $total_coding / $total_genome_size); print "\n";

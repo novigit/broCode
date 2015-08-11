@@ -6,7 +6,7 @@ use Pod::Usage;
 
 =head1 USAGE
 
-    filterAssemblyLengthCov.pl -i|in [fasta-in] -l|length [length-cutoff] -c|cov [coverage-cutoff] -m|mode [AND|OR] > [fasta-out]
+    filterAssemblyLengthCov.pl -i|in <fasta-in> -l|length <length-cutoff> -c|cov <coverage-cutoff> -m|mode <AND|OR> > <fasta-out>
 
 =head1 SYNOPSIS
 
@@ -57,10 +57,6 @@ while (my $seq = $in->next_seq) {
     my ($length, $cov) = ($line[3], $line[5]);
 
     # Use ->write_seq() to write sequences  ($seq) with sufficient length and cov to $out object
-    if    ($mode eq "OR" ) {
-	$out->write_seq($seq) if ($length > $length_cutoff || $cov > $cov_cutoff);
-    }
-    elsif ($mode eq "AND") {
-	$out->write_seq($seq) if ($length > $length_cutoff && $cov > $cov_cutoff);
-    }
+    if    ($mode eq "OR" ) {$out->write_seq($seq) if ($length > $length_cutoff || $cov > $cov_cutoff);}
+    elsif ($mode eq "AND") {$out->write_seq($seq) if ($length > $length_cutoff && $cov > $cov_cutoff);}
 }
