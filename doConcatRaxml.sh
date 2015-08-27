@@ -3,6 +3,11 @@
 ## SYNOPSIS ##
 # takes a bunch of cogs, aligns them, trims them, makes a concatenation, and infers a raxml tree
 
+## DEPENDENCIES ##
+# assumes that 
+# 'mafft-linsi, 'trimal', 'concatenateRenameAlignment.pl', and 'raxmlHPC-PTHREADS-SSE3' 
+# are in your $PATH
+
 # state usage
 function usage() {
     echo "Usage: doConcatRaxml.sh -i <cog_dir> -o <out_dir>"
