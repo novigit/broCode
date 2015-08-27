@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## SYNOPSIS: ##
+## SYNOPSIS ##
 # this minipipeline aims to reduce the redundancy of a sequence dataset #
 # using UCLUST                                                          #
 
