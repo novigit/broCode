@@ -2,12 +2,14 @@
 
 # state usage
 function usage() {
-    echo "Usage: doCompleteness.sh -f <fasta> -m <bac|arch>"
+    echo "Usage: doCompleteness.sh -f <fasta> [ -m <bac|arch> ]"
+    echo "Default mode: bac"
+    echo "Output: .faa, .gff, .hmm, and .report"
     exit
 }
 
-# if number or arguments is less than 4, invoke usage function
-if [ $# -lt 4 ]; then
+# if number or arguments is less than 2, invoke usage function
+if [ $# -lt 2 ]; then
     usage
 fi
 
@@ -28,6 +30,12 @@ echo "## Predicting ORFs.. ##"
 prodigal-2.60 -q -i $fasta -o $name.gff -a $name.faa
 
 # do mode
+
+# set default
+weights=/local/one/tools/micomplete/Bact139.weights
+inputhmm=/local/one/tools/micomplete/Bact139.hmm
+
+# if -m is specified
 if [ "$mode" = "bac" ]; then
     weights=/local/one/tools/micomplete/Bact139.weights
     inputhmm=/local/one/tools/micomplete/Bact139.hmm

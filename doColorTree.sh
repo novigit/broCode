@@ -11,14 +11,19 @@
 
 # state usage
 function usage() {
-    echo "Usage: doColorTree.sh -i <tree.newick> -b <figtree.block> -p <color_patterns.txt>"
+    echo "Usage: doColorTree.sh -i <tree.newick> -p <color_patterns.txt> [ -b <figtree.block> ]"
+    echo "If -b is unspecified, will take default figtree.block"
+    echo "Output: <.color.nex>, in the same directory as input tree. Open with FigTree"
     exit
 }
 
-# if number or arguments is less than 6, invoke usage function
-if [ $# -lt 6 ]; then
+# if number or arguments is less than 4, invoke usage function
+if [ $# -lt 4 ]; then
     usage
 fi
+
+# set default figtreeblock
+figtreeblock=$(dirname `which $0`)/figtree_block # the same directory as the script
 
 # state options
 while getopts ":i:b:p:" opt; do
