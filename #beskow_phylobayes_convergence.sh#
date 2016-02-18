@@ -1,0 +1,36 @@
+#!/bin/bash -l
+
+
+# options
+burnin=$1
+shift
+outname=$1
+shift
+chains=$*
+
+# load module
+module load phylobayes/1.5a
+
+# do tracecomp
+aprun -n 1 tracecomp -o $outname -x $burnin $chains
+
+# calculate $every, such that you sample 200 trees
+chain1=$1
+generations=$(wc -l $chain1.trace | cut -f 1 -d ' ')
+every=$(echo "($generations - $burnin) / 200" | bc)
+
+# do bpcomp for all chains
+aprun -n 1 bpcomp -o $outname -x $burnin $every $chains
+# make tree figtree-readable
+sed -i -e "s/)1:/)1.0:/g" $outname.con.tre
+
+# do bpcomp per chain
+for chain in $chains; 
+do 
+    aprun -n 1 bpcomp -o $outname.$chain -x $burnin $every $chain; 
+    sed -i -e "s/)1:/)1.0:/g" $outname.$chain.con.tre
+done
+
+# move outfiles to outdir
+mkdir $outname
+mv $outname.* $outname/

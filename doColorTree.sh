@@ -36,7 +36,7 @@ while getopts ":i:b:p:" opt; do
 done
 
 # convert to nexus
-newick2nexus.pl -r -i $tree > $tree.nex
+upp_convertNewick2Nexus.R $tree
 
 # add figtreeblock and color leafs
 NexusTreeAddColors.pl \

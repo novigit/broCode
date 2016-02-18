@@ -2,12 +2,13 @@
 use strict;
 use Getopt::Long;
 use Bio::SeqIO;
+use Pod::Usage;
 
 =head1 USAGE
 
 sequenceCutter.pl -f|--fasta [.fasta] -i|--id [query] -s|--start [integer] -e|--end [integer] > [out.fasta] 
 
-=head1 SYNOPSIS
+=head1 DESCRIPTION
 
 Select a contig or sequence in your fasta file, and extract a subsequence, discarding the rest.
 
@@ -28,12 +29,14 @@ GetOptions('f|fasta=s' => \$fasta,
 	   'i|id=s'    => \$id,
 	   's|start=s' => \$start,
 	   'e|end=s'   => \$end);
+pod2usage (-msg => "Not enough arguments") unless $fasta && $id && $start && $end;
 
 # in and out objects
 my $in  = Bio::SeqIO->new(-file   => $fasta,
 			  -format => 'fasta');
 my $out = Bio::SeqIO->new(-format => 'fasta',
 			  -fh     => \*STDOUT);
+
 
 # loop over sequences
 while ( my $seq = $in->next_seq ) {

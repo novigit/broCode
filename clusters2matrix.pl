@@ -26,7 +26,7 @@ Joran Martijn (joran.martijn@icm.uu.se)
 
 my ($dir) = @ARGV;
 
-die "usage: clusters2matrix.pl [cluster directory] > [clusters.matrix]\n" unless @ARGV == 1;
+die "usage: clusters2matrix.pl <cluster directory> > <clusters.matrix>\n" unless @ARGV == 1;
 
 my %count;
 my %taxa;
@@ -36,7 +36,7 @@ foreach my $faa (readdir DIR) {
     next if ($faa =~ m/^\./);
     print STDERR "Reading $faa ... \n";
 
-    my ($cog) = $faa =~ m/(\S+).faa/;
+    my ($cog) = $faa =~ m/(\S+)\./;
 
     my $in = Bio::SeqIO->new(-file   => "<$dir$faa",
 			     -format => 'fasta');
@@ -50,11 +50,13 @@ closedir DIR;
 
 my @taxa = (keys %taxa);
 
-print "\t";
-foreach my $taxon (@taxa) {
-    print $taxon, "\t"; 
-}
-print "\n";
+#print "\t";
+
+print "\t", join "\t", @taxa, "\n";
+# foreach my $taxon (@taxa) {
+#     print $taxon, "\t"; 
+# }
+# print "\n";
 
 foreach my $cog (keys %count) {
     print $cog;
