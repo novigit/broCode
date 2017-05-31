@@ -31,11 +31,16 @@ while (my $seq = $in->next_seq) {
     # get accessions from whole genome shotgun projects
     elsif ($def =~ m/$wgs/i) {
 
-	# get Genbank fields (like COMMENT, REFERENCE, DBLINK, WGS_SCAFLD etc)
+	# get Genbank fields (like COMMENT, REFERENCE, DBLINK, WGS, WGS_SCAFLD etc)
+	# WGS_SCAFLD is for RefSeq, WGS is for WGS
 	my $anns = $seq->annotation;
 
-	# get annotation of WGS_SCAFLD field(s)
-	my @anns = $anns->get_Annotations('wgs_scafld'); 
+	# get annotation of WGS_SCAFLD field(s) and WGS field(s)
+	my @wgs_anns = $anns->get_Annotations('wgs'); 
+	my @wgs_scafld_anns = $anns->get_Annotations('wgs_scafld');
+	my @anns = (@wgs_anns, @wgs_scafld_anns);
+	
+	# retrieve accessions
 	for my $val (@anns) {
 	    my $wgs_scafld = $val->display_text;
 	    
@@ -58,5 +63,5 @@ while (my $seq = $in->next_seq) {
     }
 }
 
-# print all stored accessions
+#print all stored accessions
 print join("\n", @accessions), "\n";

@@ -25,9 +25,9 @@ done
 # set base
 name=${fasta%.fasta}
 
-# do prodigal
-echo "## Predicting ORFs.. ##"
-prodigal-2.60 -q -i $fasta -o $name.gff -a $name.faa
+# # do prodigal
+# echo "## Predicting ORFs.. ##"
+# prodigal-2.60 -q -i $fasta -o $name.gff -a $name.faa
 
 # do mode
 
@@ -49,7 +49,7 @@ echo "## Checking completeness ##"
 micomplete.pl \
     -w $weights \
     -h $inputhmm \
-    -r $name.hmm \
+    -r $name.completeness.hmm \
     --histogram \
-    $name.faa \
-    &> $name.report
+    $fasta \
+    &> $name.completeness.report
