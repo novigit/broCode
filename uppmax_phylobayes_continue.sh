@@ -6,7 +6,7 @@ chain=$3
 hours=$4
 
 # load tools
-module load bioinfo-tools gcc/4.6 openmpi/1.4.5 phylobayesmpi/1.4f
+module load bioinfo-tools gcc/4.6 openmpi/1.4.5 phylobayesmpi/1.7a
 
 # start phylobayes chain
 # mpirun -np 16 pb_mpi -d $phylip -cat -$model -x 10 -1 $chain &
