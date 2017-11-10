@@ -37,16 +37,29 @@ my $in  = Bio::SeqIO->new(-file   => $fasta,
 my $out = Bio::SeqIO->new(-format => 'fasta',
 			  -fh     => \*STDOUT);
 
+# swap start and end if start > end
+if ($start > $end) {
+    my $newstart = $end;
+    my $newend   = $start;
+    $start = $newstart;
+    $end   = $newend;
+    print STDERR "swapped start and end coordinates, because start > end", "\n";
+    print STDERR "new start: $start, new end: $end", "\n";
+}
 
 # loop over sequences
 while ( my $seq = $in->next_seq ) {
 
+    # merge id with description
+    my $header = $seq->id . $seq->desc;
+
     # edit sequence of interest
-    if ($seq->id =~ m/$id/) {
+    if ($header =~ m/$id/) {
 	# cut sequence and create object that you can print
 	my $subseq = $seq->subseq($start, $end);
+	my $new_id = $id . '_' . $start . '_' . $end;
 	my $subseq_obj = Bio::Seq->new(-seq => $subseq,
-				       -id  => $seq->id);
+				       -id  => $new_id);
 	$out->write_seq($subseq_obj);
     }
     # print all other sequences without edit

@@ -49,22 +49,22 @@ while (my $line = <MAP>){
 close MAP;
 
 my $regex = join "|", keys %mapping; # '|' for the OR in REGEX
-print $regex, "\n";
+#print $regex, "\n";
 
 $regex = qr/$regex/; # qr/STRING/ returns STRING interpreted as REGEX pattern
-print $regex, "\n";
+#print $regex, "\n";
 
 # replace text in input
 open INPUT, '<', $input;
 while (my $line = <INPUT>){
     if (my ($hit) = $line =~ m/($regex)/) {
 	#print $hit, "\n"; 
-	print $hit, "\t", $mapping{$hit}, "\n";
+	#print $hit, "\t", $mapping{$hit}, "\n";
 	$line =~ s/$hit/$mapping{$hit}/g;
 	print $line;
     }
     else {
-#    	print $line;
+    	print $line;
     }
 }
 close INPUT;
