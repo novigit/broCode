@@ -1,0 +1,5 @@
+red	UBA2947
+red	UBA3760
+red	UBA3635
+red	UBA6864
+red	Rickettsiaceae_bacterium_4572_127
