@@ -1,0 +1,5 @@
+red	Euryarchaeota_t_
+blue	DPANN_group_t_
+grey	unclassified_Archaea_t_
+green	TACK_group_t_
+purple	Asgard_group_t_
