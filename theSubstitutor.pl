@@ -43,7 +43,7 @@ open MAP, '<', $map;
 while (my $line = <MAP>){
     chomp $line;
     my ($search, $replace) = split '\t', $line;
-    # print $search, "\t", $replace, "\n";
+    #print $search, "\t", $replace, "\n";
     $mapping{$search}=$replace;
 }
 close MAP;

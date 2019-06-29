@@ -5,7 +5,7 @@
 # state usage
 function usage() {
     echo -e "Usage: \n\tprepSupermatrix.sh -f <dir with faas> -o <outdir> -a <linsi|einsi> -p <trimal|bmge> -c <concat_name> -s <separator> \n\n"
-    echo "Will replace most X characters with gaps after aligment"
+    echo "Will replace most X characters with gaps after alignment"
     echo "NOTE: When using special characters like '.' as separators, use two escape charactes. e.g. \\."
     exit
 }
