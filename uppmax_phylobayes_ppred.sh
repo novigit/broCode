@@ -1,0 +1,33 @@
+#!/bin/bash -l
+
+# options
+burnin=$1
+generations=$2
+every=$3
+threads=$4
+chain=$5
+
+
+# load tools
+module load bioinfo-tools phylobayesmpi/1.8
+
+outname=ppred_b${burnin}_g${generations}_e${every}_t${threads}
+echo "Burnin=$burnin, Outname=$outname, Generations=$generations, Chain=$chain";
+
+
+## do posterior predictive test -per chain-
+# do posterior predictive tests (maximum square deviation between global and taxon-specific empirical frequencies)
+mpirun -n $threads readpb_mpi -ppred -comp -x $burnin $every $chain 2> ${outname}_comp_${chain}.out
+# do posterior predictive tests (mean number of distinct amino acids per site)
+# mpirun -n $threads readpb_mpi -ppred -div -x $burnin $every $chain 2> ${outname}_div_${chain}.out
+# compute site-specific marginal likelihoods
+#mpirun -n $threads readpb_mpi -sitelogl -x $burnin $every $chain 2> ${outname}_sitelogl_${chain}.out
+
+# make out directory and move results there
+# mkdir $outname
+# mv $outname* $outname/
+# rm *.tree
+# mv *.comp $outname/
+# mv *.div $outname/
+
+exit

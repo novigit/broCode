@@ -58,7 +58,7 @@ echo "Pica directory: $picadir"
 # prepare outdir
 runname=$(basename $alignment)
 cp    $alignment   $SNIC_TMP
-cp -r $runname.npb.nucl.out $SNIC_TMP
+#cp -r $runname.out $SNIC_TMP
 
 # enter $SNIC_TMP
 cd $SNIC_TMP
@@ -96,7 +96,7 @@ elif [ "$fast" = "triggered" ]; then
 elif [ "$slow" = "triggered" ]; then
 
     # create outdirectory
-    mkdir $runname.npb.nucl.out
+    #mkdir $runname.npb.nucl.out
 
     # run slow iqtree
     iqtree-omp -s $alignment -nt $threads -m TESTNEW -mset GTR -b 100 -wbtl -seed 12345 -pre $runname.npb.nucl.out/$runname -keep-ident -quiet

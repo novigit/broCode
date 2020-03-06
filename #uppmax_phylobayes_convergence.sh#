@@ -10,7 +10,7 @@ chains=$*
 echo "Burnin: $burnin, Outname=$outname, Chains=$chains";
 
 # load tools
-module load R/3.5.0 bioinfo-tools openmpi/1.4.5 phylobayesmpi/1.8
+module load bioinfo-tools gcc/4.6 openmpi/1.4.5 phylobayesmpi/1.8 R/3.2.3
 
 # check dependencies
 # type -P plot_pb_stats.R >/dev/null 2>&1 || { echo -e "Error: plot_pb_stats.R not found" "\n" >&2 }

@@ -1,0 +1,99 @@
+#!/bin/bash -l
+#set -e
+
+## SYNOPSIS ##
+
+# state usage
+function usage() {
+    echo "Usage: uppmax_iqtreeconsel_topology_test_scratch.sh -s <alignment> -m <model> -z <treelist> -n <treenames> -t <threads> [ -g <guidetree> ]"
+    echo "Remember to add your bootstrap trees to the topologies you want to test"
+    echo "Treenames is a file that maps tree number to tree name. User provides it so results are easier to interpret"
+    exit
+}
+
+# if number or arguments is less than 10, invoke usage function
+if (( $# < 10 )); then
+    usage;
+fi
+
+# defaults
+#alphabet="aa"
+
+# state options
+while getopts ":s:m:z:n:t:g:" opt; do
+    case $opt in
+	s) alignment=${OPTARG};;
+	m) model=${OPTARG};;
+	z) treelist=${OPTARG};;
+	n) treenames=${OPTARG};;
+	t) threads=${OPTARG};;
+	g) guidetree=${OPTARG};;
+	*) usage;;
+    esac
+done
+
+# load tools
+module load bioinfo-tools iqtree/1.5.3-omp
+
+# checks
+# if file ends with .phylip
+# if threads > 1
+# if outfile already exists
+
+# fix names
+#sed -i -r "s/[)(:;,]/_/g" $alignment
+
+# report stuff
+echo "Alignment file: $alignment"
+echo "Model: $model"
+echo "Treelist: $treelist"
+echo "Treenames: $treenames"
+echo "Number of threads: $threads"
+echo "Scratch directory: $SNIC_TMP"
+
+# copy files to $SNIC_TMP, the directory on the scratch disk of the node that the analysis will be run on
+picadir=`pwd`
+echo "Pica directory: $picadir"
+
+# copy inputs to the $SNIC_TMP
+runname=$(basename $alignment .aln)_tptest
+cp    $alignment   $SNIC_TMP
+cp    $treenames   $SNIC_TMP
+cp    $treelist    $SNIC_TMP
+cp    $guidetree   $SNIC_TMP
+#cp -r $runname.out $SNIC_TMP
+
+# enter $SNIC_TMP
+cd $SNIC_TMP
+
+# create outdirectory, iqtree doesn't seem to create a new directory when using a not-yet-existing-directory in the -pre flag
+mkdir $runname.out
+
+# run iqtree topology test and retrieve site likelihoods via -wsl
+# iqtree command depends on whether or not you are using a guidetree
+if [ -z ${guidetree+x} ]; then 
+    echo "guidetree NOT detected"; 
+    echo "Running iqtree topology test..."
+    echo "iqtree-omp -s $alignment -nt $threads -m $model -z $treelist -n 1 -zb 10000 -zw -wsl -au -seed 12345 -pre $runname.out/$runname -keep-ident -quiet"
+    iqtree-omp -s $alignment -nt $threads -m $model -z $treelist -n 1 -zb 10000 -zw -wsl -au -seed 12345 -pre $runname.out/$runname -keep-ident -quiet
+else
+    echo "guidetree IS detected";
+    echo "Running iqtree topology test..."
+    echo "iqtree-omp -s $alignment -nt $threads -ft $guidetree -m $model -z $treelist -n 1 -zb 10000 -zw -wsl -au -seed 12345 -pre $runname.out/$runname -keep-ident -quiet"
+    iqtree-omp -s $alignment -nt $threads -ft $guidetree -m $model -z $treelist -n 1 -zb 10000 -zw -wsl -au -seed 12345 -pre $runname.out/$runname -keep-ident -quiet
+fi
+
+# extract P-values from .iqtree file and add to the $treenames file
+cat $treenames <(grep -A 107 "USER TREES" $runname.out/$runname.iqtree) > $runname.out/$runname.iqtree.pvalues
+
+# perform AU test with consel-0.20
+conseldir=/home/joranm/tools/consel-0.20/bin/
+cd $runname.out/
+$conseldir/seqmt --puzzle $runname.sitelh
+$conseldir/makermt $runname
+$conseldir/consel $runname
+cat ../$treenames <( $conseldir/catpv $runname -s 1 ) > $runname.consel.pvalues
+cd ..
+
+# transfer files back to picadir
+cp -r $runname.out $picadir

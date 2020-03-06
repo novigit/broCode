@@ -12,7 +12,7 @@ module load bioinfo-tools gcc/4.6 openmpi/1.4.5 phylobayesmpi/1.8
 
 # start phylobayes chain
 if [ "$mode" = "start" ]; then
-    mpirun -np 16 pb_mpi -d $phylip -cat -$model $chain &
+    mpirun -np 16 pb_mpi -d $phylip -cat $profile -$model $chain &
 fi
 
 # continue run
