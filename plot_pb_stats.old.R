@@ -1,5 +1,4 @@
 #!/pdc/vol/R/3.2.0/bin/Rscript
-
 ######################
 # plot_pb_stats.R
 ######################
@@ -70,8 +69,7 @@ if (length(output_idx) > 0){
 ## Collect data
 n_chains <- length(args)
 if (program == "pb"){
-  # colnames <- c("x", "time", "topo", "loglik", "length", "alpha", "nmode", "statent", "statalpha", "rrent", "rrmean") # if cat-gtr
-  colnames <- c("x", "time", "topo", "loglik", "length", "alpha", "nmode", "statent", "statalpha") # if cat-lg
+  colnames <- c("x", "treegen", "time", "loglik", "length", "alpha", "nmode", "stat")
   variables <- colnames[4:7]
 } else if (program == "nhpb"){
   colnames <- c("x", "logsamp", "numberBP", "length", "HPrate")
@@ -88,7 +86,7 @@ names(maxdens) <- colnames
 for (i in 1:n_chains){
   if (program == "pb"){
     df <- read.table(paste(folder, "/", args[i], ".trace", sep=""),
-                     h=TRUE, comment.char="")
+                     h=FALSE)
   } else if (program == "nhpb"){
     x <- as.numeric(readLines(paste(folder, "/mon_", args[i], ".",
                                     variables[1], sep="")))

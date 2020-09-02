@@ -14,38 +14,37 @@ function help_doc() {
 }
 
 # check number of arguments
-if (( $# == 0 || $# >= 2  && $# <= 6 )); then
+if (( $# > 1 || $# < 16 )); then
     echo -e "Error: not enough arguments" "\n";
     usage;
 fi
 
 # state options
-while getopts ":p:m:s:h" opt; do
+while getopts ":f:r:s:t:o:l:m:k:h" opt; do
     case $opt in
-	p) phylip=${OPTARG};;
-	m) model=${OPTARG};;
+	f) fwdReads=${OPTARG};;
+	r) rvrReads=${OPTARG};;
+	s) unpReads=${OPTARG};;
+	t) threads=${OPTARG};;
+	o) outpdir=${OPTARG};;
+	l) memlimit=${OPTARG};;
+	m) mode=${OPTARG};;
+	k) kmers=${OPTARG};;
 	s) setting=${OPTARG};;
 	h) help_doc;;
 	*) usage;;
     esac
 done
-shift $(( OPTIND - 1 ))
-chains=$*
 
 # submit job
-jobname=$(basename $phylip .phylip)
-for chain in $chains;
-do
-    # start chains
-    if [ "$setting" = "start" ]; then
-	mkdir chain_backup
-	sbatch -A 2019-3-474 -J $jobname -o $jobname.o -e $jobname.e -t 23:59:00 --nodes=1 --ntasks-per-node=32 --mail-type=BEGIN,END,FAIL beskow_phylobayes.sh $phylip $model $chain start
-    fi
+jobname=$outpdir
+if [ "$mode" = "standard" ]; then
+    sbatch -A m.2015-1-273 -J $jobname -o $jobname.o -e $jobname.e -t 23:59:00 --nodes=4 --ntasks-per-node=32 --mail-type=BEGIN,END,FAIL beskow_phylobayes.sh $phylip $model $chain start
+fi
 
     # continue chains
     if [ "$setting" = "continue" ]; then
-	rsync -av --partial --inplace --append --progress ${chain}*.* chain_backup/
-	sbatch -A 2019-3-474 -J $jobname -o $jobname.o -e $jobname.e -t 23:59:00 --nodes=1 --ntasks-per-node=32 --mail-type=BEGIN,END,FAIL beskow_phylobayes.sh $phylip $model $chain continue
+	sbatch -A m.2015-1-273 -J $jobname -o $jobname.o -e $jobname.e -t 23:59:00 --nodes=4 --ntasks-per-node=32 --mail-type=BEGIN,END,FAIL beskow_phylobayes.sh $phylip $model $chain continue
     fi
 done
 

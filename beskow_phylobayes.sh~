@@ -26,12 +26,12 @@ module load phylobayes/1.7b
 # by NOT setting -S, and saving every generation, we allow for posterior predictive tests
 # setting -dc removes constant columns from the alignment and improves mixing (see manual)
 if [ "$mode" = "start" ]; then
-    srun -n 32 pb_mpi -d $phylip -cat -$model $chain &
+    srun -n 32 pb_mpi -d $phylip -cat -$model $chain
 fi
 
 # continue phylobayes chain
 if [ "$mode" = "continue" ]; then
-    srun -n 32 pb_mpi $chain &
+    srun -n 32 pb_mpi $chain
 fi
 
 # stop chains before time runs out

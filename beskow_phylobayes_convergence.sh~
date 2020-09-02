@@ -31,7 +31,7 @@ shift
 chains=$*
 
 # load module
-module load phylobayes/1.7a R/3.2.0
+module load phylobayes/1.7a R/3.1.2
 
 # do plot_pb_stats.R (do one plot with burnin = 0, to check if burnin value is ok)
 plot_pb_stats.R folder=. burnin=0 output=${outname}.b0.Rplot.png $chains

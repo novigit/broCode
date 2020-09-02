@@ -8,7 +8,7 @@ begin figtree;
 	set appearance.foregroundColour=#-16777216;
 	set appearance.selectionColour=#-2144520576;
 	set branchLabels.colorAttribute="User selection";
-	set branchLabels.displayAttribute="label";
+	set branchLabels.displayAttribute="bootstrap";
 	set branchLabels.fontName="Arial";
 	set branchLabels.fontSize=8;
 	set branchLabels.fontStyle=0;

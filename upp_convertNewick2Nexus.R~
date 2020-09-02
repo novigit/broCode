@@ -1,4 +1,4 @@
-#!/pdc/vol/R/3.2.0/bin/Rscript
+#!Rscript
 
 ## Author: Jimmy Saw
 ## Date modified: 2015-06-08
