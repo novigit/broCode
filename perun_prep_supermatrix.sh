@@ -54,3 +54,6 @@ for i in $outdir/2_trim/*; do
     sed -i -r "/^>/ s/$separator.*//" $i;
 done
 
+# concatenate
+export PATH=$PATH:~/repositories/broCode
+concatenateRenameAlignment.pl $outdir/2_trim/* > $outdir/3_concat/$concatName.cct.untr.aln
