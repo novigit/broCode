@@ -29,15 +29,13 @@ done
 # prepare out directories
 mkdir -p $outdir/1_aln $outdir/2_trim $outdir/3_concat
 
-source activate mafft
-
 # align
+source activate mafft
 echo "Aligning clusters in $faas ..."
 parallel -j6 "mafft-$aligner --thread 5 --reorder --quiet {} > $outdir/1_aln/{/.}.aln" ::: $faas/*
 # replace X characters with gaps
 for i in $outdir/1_aln/*; do sed -i -r "/^>/! s/X/-/g" $i; done 
-
-conda deactivate mafft
+conda deactivate
 
 # trim
 echo "Trimming clusters in $outdir/1_aln ..."
@@ -46,7 +44,7 @@ if [ "$pruner" = "trimal" ]; then
 elif [ "$pruner" = "bmge" ]; then
     source activate bmge
     parallel -j30 "exec java -Xmx128G -jar /scratch2/software/anaconda/envs/bmge/share/bmge-1.12-0/BMGE.jar -i {} -of $outdir/2_trim/{/.}.trim.aln -m BLOSUM30 -t AA" ::: $outdir/1_aln/*
-    conda deactivate bmge
+    conda deactivate
 fi
 
 # strip sequence names of everything except species name
