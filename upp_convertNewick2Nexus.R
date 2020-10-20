@@ -1,4 +1,5 @@
-#!/pdc/vol/R/3.2.0/bin/Rscript
+#!/usr/local/bin/Rscript
+##!/pdc/vol/R/3.2.0/bin/Rscript
 
 ## Author: Jimmy Saw
 ## Date modified: 2015-06-08
