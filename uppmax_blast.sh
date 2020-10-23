@@ -1,15 +1,13 @@
-#!/bin/bash
-#$ -S /bin/bash
-. /etc/profile
-#$ -cwd
-#$ -m bea
-#$ -M joran.martijn@dal.ca
+#!/bin/bash -l
 
 # state usage
 function usage() {
-    echo "Usage: perun_blast.sh -q <query> -d <db> -l <taxidlist> -t <threads>"
+    echo "Usage: uppmax_blast.sh -q <query> -d <db> -l <taxidlist> -t <threads>"
     exit
 }
+
+# load tools
+module load bioinfo-tools blast/2.10.1+
 
 # state options
 while getopts ":q:d:l:t:" opt; do
@@ -22,8 +20,7 @@ while getopts ":q:d:l:t:" opt; do
     esac
 done
 
-source activate blast
-
+# execute blast
 blastp \
     -query $query \
     -db $db \
@@ -34,4 +31,3 @@ blastp \
     -max_target_seqs 100000 \
     -num_threads $threads
 
-conda deactivate
