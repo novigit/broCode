@@ -22,10 +22,8 @@ while getopts ":q:d:l:t:" opt; do
     esac
 done
 
-# load blast
 source activate blast
 
-# execute blast
 blastp \
     -query $query \
     -db $db \
@@ -36,5 +34,4 @@ blastp \
     -max_target_seqs 100000 \
     -num_threads $threads
 
-# deactivate blast environment
 conda deactivate
