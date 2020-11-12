@@ -39,13 +39,13 @@ do
     # start chains
     if [ "$setting" = "start" ]; then
 	mkdir chain_backup
-	sbatch -A 2019-3-474 -J $jobname -o $jobname.o -e $jobname.e -t 23:59:00 --nodes=1 --ntasks-per-node=32 --mail-type=BEGIN,END,FAIL beskow_phylobayes.sh $phylip $model $chain start
+	sbatch -A 2020-5-473 -J $jobname -o $jobname.o -e $jobname.e -t 23:59:00 --nodes=1 --ntasks-per-node=32 --mail-type=BEGIN,END,FAIL beskow_phylobayes.sh $phylip $model $chain start
     fi
 
     # continue chains
     if [ "$setting" = "continue" ]; then
 	rsync -av --partial --inplace --append --progress ${chain}*.* chain_backup/
-	sbatch -A 2019-3-474 -J $jobname -o $jobname.o -e $jobname.e -t 23:59:00 --nodes=1 --ntasks-per-node=32 --mail-type=BEGIN,END,FAIL beskow_phylobayes.sh $phylip $model $chain continue
+	sbatch -A 2020-5-473 -J $jobname -o $jobname.o -e $jobname.e -t 23:59:00 --nodes=1 --ntasks-per-node=32 --mail-type=BEGIN,END,FAIL beskow_phylobayes.sh $phylip $model $chain continue
     fi
 done
 
