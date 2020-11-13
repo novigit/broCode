@@ -31,7 +31,7 @@ chain=$6
 echo "Burnin: $burnin Every: $every Threads: $threads Until: $untils Chains: $chain" > beskow_phylobayes_ppred_$chain.debug.out
 
 # load module
-module load phylobayes/1.7b
+module load phylobayes/1.8
 
 outname=ppred_b${burnin}_g${generations}_e${every}_u${untils}_t${threads}
 

@@ -20,7 +20,7 @@ chain=$3
 mode=$4
 
 # load tools
-module load phylobayes/1.7b
+module load phylobayes/1.8
 
 # start phylobayes chain
 # by NOT setting -S, and saving every generation, we allow for posterior predictive tests
