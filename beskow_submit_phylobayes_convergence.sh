@@ -38,7 +38,7 @@ shift $(( OPTIND - 1 )) # OPTIND's value is the index of the next argument to be
 chains=$*
 
 # submit job
-sbatch -A 2019-3-474 -J $outname -o $outname.o -e $outname.e -t 20:00 --nodes=1 --ntasks-per-node=1 --mail-type=BEGIN,END,FAIL beskow_phylobayes_convergence.sh $burnin $outname $chains
+sbatch -A 2020-5-473 -J $outname -o $outname.o -e $outname.e -t 20:00 --nodes=1 --ntasks-per-node=1 --mail-type=BEGIN,END,FAIL beskow_phylobayes_convergence.sh $burnin $outname $chains
 
 # POD Documentation
 <<=cut

@@ -47,7 +47,7 @@ outname=ppred_b${burnin}_g${generations}_e${every}_u${untils}
 
 # submit job
 for chain in $chains; do
-    sbatch -A 2019-3-474 -J $outname -o $outname.o -e $outname.e -t 10:00:00 --nodes=1 --ntasks-per-node=$threads --mail-type=BEGIN,END,FAIL beskow_phylobayes_ppred.sh $burnin $generations $every $untils $threads $chain
+    sbatch -A 2020-5-473 -J $outname -o $outname.o -e $outname.e -t 10:00:00 --nodes=1 --ntasks-per-node=$threads --mail-type=BEGIN,END,FAIL beskow_phylobayes_ppred.sh $burnin $generations $every $untils $threads $chain
 done
 
 # POD Documentation
