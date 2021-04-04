@@ -132,6 +132,7 @@ storm	TARA_125_SRF_medium_2kb_bin_98
 storm	bin_98_uncut
 teal	Magnetococcus
 teal	MAYU
+teal	Ca_Magnetococcus
 red	Histiona
 red	Reclinomonas
 red	nuclear_markers
@@ -155,13 +156,3 @@ red	Pleurozia
 red	Ophioglossum
 red	Nelumbo
 red	Nymphaea
-blue	UBA
-blue	TARA_ANE
-blue	TOBG
-blue	Azospirillum_sp
-blue	Acetobacter_sp
-blue	Rickettsiaceae_bacterium_4572_127
-blue	Proteobacteria_bacterium
-blue	Alphaproteobacteria_bacterium_RIFCS
-blue	BIN67
-blue	BIN125

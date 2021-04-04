@@ -35,20 +35,26 @@ mkdir -p $outdir/1_aln $outdir/2_trim $outdir/3_concat
 
 # align
 echo "Aligning clusters in $faas ..."
-parallel -j6 "mafft-$aligner --thread 5 --reorder --quiet {} > $outdir/1_aln/{/.}.aln" ::: $faas/*
-for i in $outdir/1_aln/*; do sed -i -r "/^>/! s/X/-/g" $i; done # replace X characters with gaps
+parallel -j4 "mafft-$aligner --thread 5 --reorder --quiet {} > $outdir/1_aln/{/.}.aln" ::: $faas/*
+for i in $outdir/1_aln/*; do sed -i '' -E "/^>/! s/X/-/g" $i; done # replace X characters with gaps
+
 
 # trim
 echo "Trimming clusters in $outdir/1_aln ..."
 if [ "$pruner" = "trimal" ]; then
     parallel -j30 "trimal -in {} -out $outdir/2_trim/{/.}.trim.aln -gappyout -fasta" ::: $outdir/1_aln/*
 elif [ "$pruner" = "bmge" ]; then
-    parallel -j30 "java -jar /usr/local/bin/bmge-1.12/BMGE.jar -i {} -of $outdir/2_trim/{/.}.trim.aln -m BLOSUM30 -t AA" ::: $outdir/1_aln/*
+    # # on perun
+    # parallel -j30 "java -jar /usr/local/bin/bmge-1.12/BMGE.jar -i {} -of $outdir/2_trim/{/.}.trim.aln -m BLOSUM30 -t AA" ::: $outdir/1_aln/*
+    # on macbook
+    parallel -j4 "java -Xmx128G -jar /Users/joran/miniconda3/share/bmge-1.12-0/BMGE.jar -i {} -of $outdir/2_trim/{/.}.trim.aln -m BLOSUM30 -t AA" ::: $outdir/1_aln/*
 fi
+
 
 # strip sequence names of everything except species name
 for i in $outdir/2_trim/*; do 
-    sed -i -r "/^>/ s/$separator.*//" $i;
+    #sed -i '' -E "/^>/ s/$separator.*//" $i;
+    sed -i '' -E "/^>/ s/\.\..*//" $i;
 done
 
 # concatenate
