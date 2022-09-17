@@ -48,7 +48,8 @@ genes_with_false_introns = []
 
 # loop over introns, check which are real or false, and update intron features
 updated_introns = []
-introns = db.features_of_type(featuretype='intron', limit='tig00000012:1-400000')
+# introns = db.features_of_type(featuretype='intron', limit='tig00000492:1-2167353')
+introns = db.features_of_type(featuretype='intron')
 for i in introns:
     
     # start list of spliced / all aligned reads ratio's
@@ -125,27 +126,28 @@ fasta = SeqIO.index('ergo_cyp_genome.fasta','fasta')
 
 
 # generate new feature objects from template
-def new_feature_from_template(gene, ftype, strand):
+def new_feature_from_template(feat, ftype, strand):
     # determine attributes of template
     if ftype == 'gene':
-        # attrs = gene.attributes
-        name = re.sub('ctg[0-9]{3}\.', '', gene.id) 
-        attrs = 'ID='+gene.id+';Name='+name
+        name = re.sub('ctg[0-9]{3}\.', '', feat.id) 
+        attrs = 'ID='+feat.id+';Name='+name
     elif ftype =='mRNA':
-        mrna_id = gene.id.replace('gene','mRNA')
-        parent = gene.id
+        mrna_id = feat.id.replace('gene','mRNA')
+        parent = feat.id
         name = re.sub('ctg[0-9]{3}\.', '', mrna_id) 
         attrs = 'ID='+mrna_id+';Parent='+parent+';Name='+name
+    elif ftype =='intron':
+        attrs = feat.attributes
     else:
-        feat_id = gene.id.replace('gene','mRNA')
+        feat_id = feat.id.replace('gene','mRNA')
         attrs = 'ID='+feat_id+'.'+ftype+'01;Parent='+feat_id
     # define template feature
     feature_template = gffutils.feature.Feature(
-            seqid=gene.seqid, 
+            seqid=feat.seqid, 
             source='gffutils', 
             featuretype=ftype, 
-            start=gene.start, 
-            end=gene.end, 
+            start=feat.start, 
+            end=feat.end, 
             score='.',
             strand=strand,  
             frame='.',
@@ -160,7 +162,7 @@ def get_non_overlapping_orfs(seq, strand):
     # convert strand symbol
     if strand == '+':
         strand = 'f'
-    else:
+    elif strand == '-':
         strand = 'r'
     # find orfs in seq
     ## orfs() returns a list of tuples
@@ -200,14 +202,45 @@ def get_non_overlapping_orfs(seq, strand):
             # if it survived the overlap checks, select orf
             occupied_regions.append([start,stop])
             selected_orfs.append(orf)
+    # sort selected orfs by start coordinate
+    selected_orfs.sort(key=lambda x : x[0])
     return selected_orfs
     
 
+# splice a sequence region with known intron coordinates
+def splice_region(region, introns):
+    '''
+    Take a sequence string and a list of lists containing
+    intron borders and splice out the introns from the 
+    sequence string
+    '''
+    # -1 from intron start (='exon' end)
+    # +1 from intron end   (='exon' start)
+    introns = [ [b[0]-1 , b[1]+1] for b in introns ]
+        
+    # flatten list and convert to 0-indexing
+    f = [ x-1 for b in introns for x in b ]
+    # add start and end (0-indexed)
+    f.insert(0, 0)
+    f.append(len(region)-1)
 
+    # repack list
+    borders = [ [f[i],f[i+1]] for i in range(0, len(f), 2) ]
+    # construct spliced region
+    spliced_region = ''
+    for b in borders:
+        spliced_region += region[ b[0]:b[1]+1 ]
+    return spliced_region
+
+
+all_gene_ids = [ f.id for f in db.all_features(featuretype='gene') ]
 
 new_features = []
 # loop over genes with false introns
 for g in genes_with_false_introns:
+
+    # print()
+    # print(g.id)
 
     # define region and strand on which we have to operate
     ## get start coordinate
@@ -216,7 +249,10 @@ for g in genes_with_false_introns:
     gene_number = int( g.id.split('gene')[1] )
     gene_contig = str( g.id.split('gene')[0] )
     next_gene_id = gene_contig + "gene%04d" % (gene_number + 1)
-    region_end = db[next_gene_id].start - 1
+    if next_gene_id in all_gene_ids:
+        region_end = db[next_gene_id].start - 1
+    else:
+        region_end = g.end + 1
     ## extract region sequence
     ### note that slicing is 0-indexed, and gff coordinates 1-indexed
     contig = fasta[g.seqid].seq
@@ -227,8 +263,8 @@ for g in genes_with_false_introns:
     # determine if there are any true introns in this gene
     ## get true intron borders
     introns = list( db.children(g, featuretype='intron', order_by=('seqid','start','attributes')) )
-    true_introns = filter(lambda x : x.attributes['call'][0] == 'true', introns)
-    intron_borders = [ x for t in true_introns for x in [t.start, t.end] ]
+    true_introns = list( filter(lambda x : x.attributes['call'][0] == 'true', introns) )
+    intron_borders = [ [t.start, t.end] for t in true_introns ]
 
     ## delete false introns
     false_introns = filter(lambda x : x.attributes['call'][0] == 'false', introns)
@@ -238,11 +274,11 @@ for g in genes_with_false_introns:
     gene_ID = g.attributes['ID'][0]
 
     # if there are no introns
-    if len(intron_borders) == 0:
+    if len(true_introns) == 0:
 
         # apply naive ORF finder
         new_orfs = get_non_overlapping_orfs(region_seq, strand)
-        i=1
+        n=1 # orf counter
         for orf in new_orfs:
             # create new template gene and mRNA feature
             new_gene = new_feature_from_template(g, 'gene', strand)
@@ -250,52 +286,220 @@ for g in genes_with_false_introns:
             new_exon = new_feature_from_template(g, 'exon', strand)
             new_CDS  = new_feature_from_template(g, 'CDS',  strand)
             # adjust coordinates
-            new_gene.start = region_start + orf[0]
-            new_gene.end   = region_start + orf[1] - 1
-            new_mRNA.start = new_gene.start 
-            new_mRNA.end   = new_gene.end
-            new_exon.start = new_gene.start 
-            new_exon.end   = new_gene.end
-            new_CDS.start  = new_gene.start 
-            new_CDS.end    = new_gene.end
+            new_gene.start = new_mRNA.start = new_exon.start = new_CDS.start = region_start + orf[0]
+            new_gene.end   = new_mRNA.end   = new_exon.end   = new_CDS.end   = region_start + orf[1] - 1
             # update name only if multiple orfs
             if len(new_orfs) > 1:
                 # update gene ID and Name
-                new_gene_ID = re.sub('([0-9]{4})', r'\1-' + str(i), gene_ID)
-                new_gene.id = new_gene_ID
-                new_gene.attributes['ID'][0] = new_gene_ID
+                new_gene_ID = re.sub('([0-9]{4})', r'\1-' + str(n), gene_ID)
+                new_gene.id = new_gene.attributes['ID'][0] = new_gene_ID
                 new_gene.attributes['Name'][0] = re.sub('ctg[0-9]{3}\.', '', new_gene_ID)
                 # update mRNA name
                 new_mRNA_ID = re.sub('gene', 'mRNA', new_gene_ID)
-                new_mRNA.id = new_mRNA_ID
-                new_mRNA.attributes['ID'][0] = new_mRNA_ID
+                new_mRNA.id = new_mRNA.attributes['ID'][0] = new_mRNA_ID
                 new_mRNA.attributes['Parent'][0] = new_gene_ID
                 new_mRNA.attributes['Name'][0] = re.sub('ctg[0-9]{3}\.', '', new_mRNA_ID)
                 # update exon name
                 new_exon_ID = new_mRNA_ID + '.exon01'
-                new_exon.id = new_exon_ID
-                new_exon.attributes['ID'][0] = new_exon_ID
+                new_exon.id = new_exon.attributes['ID'][0] = new_exon_ID
                 new_exon.attributes['Parent'][0] = new_mRNA_ID
                 # update CDS name
                 new_CDS_ID = new_mRNA_ID + '.CDS01'
-                new_CDS.id = new_CDS_ID
-                new_CDS.attributes['ID'][0] = new_CDS_ID
+                new_CDS.id = new_CDS.attributes['ID'][0] = new_CDS_ID
                 new_CDS.attributes['Parent'][0] = new_mRNA_ID
 
             # print(new_gene)
-            new_features.extend( [new_gene,new_mRNA,new_exon,new_CDS] )
-            # new_features.append(new_gene)
+            # print(new_mRNA)
+            # print(new_exon)
+            # print(new_CDS)
 
-            i = i+1
+            # update orf counter
+            n = n+1
+
+            # add new features to list
+            new_features.extend( [new_gene,new_mRNA,new_exon,new_CDS] )
+
+    # if there are introns, however..
+    elif len(true_introns) != 0:
+
+        # adjust intron coordinates so they are
+        # relative to the start of the sequence region
+        rel_intron_borders = [ [start-region_start+1,stop-region_start+1] for start, stop in intron_borders ]
+
+        # splice out introns from sequence region
+        spliced_region_seq = splice_region(region_seq, rel_intron_borders)
+
+        # calculate intron junction coordinates in spliced sequence region
+        # and intron length
+        junctions = []
+        accum_intron_len = 0
+        for i in rel_intron_borders:
+            junction = i[0] - accum_intron_len
+            intron_len = i[1] - i[0] + 1
+            junctions.append([ junction,intron_len ])
+            accum_intron_len += intron_len
+
+        # apply naive ORF finder
+        new_orfs = get_non_overlapping_orfs(spliced_region_seq, strand)
+        # convert to list of lists so I can update orf coordinates
+        # (tuples are immutable)
+        upd_orfs = [ list(orf) for orf in new_orfs ]
+
+        # re-insert introns
+        # (i.e. update orf start and end coordinates)
+        accum_intron_len = 0
+        # compare all-vs-all orfs vs intron-junctions
+        for o in upd_orfs:
+            # shift orf positions by accumulated intron lengths
+            o[0] += accum_intron_len
+            o[1] += accum_intron_len
+            for j in junctions:
+                i,intron_len = j
+                # if intron junction is situated before the orf
+                if i < o[0] < o[1]:
+                    o[0] += intron_len
+                    o[1] += intron_len
+                    junctions.remove(j) # intron is 'used', no longer consider it
+                    accum_intron_len += intron_len
+                # if intron junction is situated within the orf
+                if o[0] < i < o[1]:
+                    o[1] += intron_len
+                    junctions.remove(j) # intron is 'used', no longer consider it
+                    accum_intron_len += intron_len    
+                # if intron junction is situated after  the orf    
+                if o[0] < o[1] < i:
+                    pass
+
+        # convert updated ORF coordinates back to genome space
+        upd_orfs  = [ [start+region_start,stop+region_start-1,strand,desc] for start,stop,strand,desc in upd_orfs ]
+
+        # transfer updated ORF coordinates and exon coordinates to new features
+        # all-vs-all orf vs intron comparison
+        n=1 # orf counter
+        for o in upd_orfs:
+            new_gene = new_feature_from_template(g, 'gene', strand)
+            new_mRNA = new_feature_from_template(g, 'mRNA', strand)
+            new_gene.start = new_mRNA.start = exon_start = o[0]
+            new_gene.end   = new_mRNA.end   = exon_end   = o[1]
+
+            # gene_ID = 'ctg012.gene0001'
+            new_mRNA_ID = re.sub('gene','mRNA', gene_ID)
+            # print(new_mRNA_ID)
+
+            # update gene names only if there are multiple new orfs
+            if len(upd_orfs) > 1:
+                # update gene ID and Name
+                new_gene_ID = re.sub('([0-9]{4})', r'\1-' + str(n), gene_ID)
+                new_gene.id = new_gene.attributes['ID'][0] = new_gene_ID
+                new_gene.attributes['Name'][0] = re.sub('ctg[0-9]{3}\.', '', new_gene_ID)
+                # update mRNA ID and Name and Parent
+                new_mRNA_ID = re.sub('gene', 'mRNA', new_gene_ID)
+                new_mRNA.id = new_mRNA.attributes['ID'][0] = new_mRNA_ID
+                new_mRNA.attributes['Name'][0] = re.sub('ctg[0-9]{3}\.', '', new_mRNA_ID)
+                new_mRNA.attributes['Parent'][0] = new_gene_ID
+
+
+            # print(new_gene)
+            # print(new_mRNA)
+
+            # m=1 # exon counter
+            # for i in intron_borders:
+            #     # fish out intron_object
+            #     intron = true_introns[m-1]
+            #     # print(intron)
+            m=1 # exon counter
+            for intron in true_introns:
+                i = [ intron.start, intron.end ]
+                # print(i[0])
+                if i[0] < o[0] < o[1]:
+                    # intron_borders.remove(i)
+                    true_introns.remove(intron)
+                    db.delete(intron)
+                if o[0] < i[0] < o[1]:
+                    # create new exon and CDS
+                    new_exon       = new_feature_from_template(g, 'exon', strand)
+                    new_CDS        = new_feature_from_template(g, 'CDS', strand)
+                    ## update exon coordinates
+                    new_exon.start = new_CDS.start = exon_start
+                    new_exon.end   = new_CDS.end   = i[0] - 1
+
+                    ## update exon ID and Parent
+                    new_exon_ID    = new_mRNA_ID + ".exon%02d" % m
+                    new_exon.id    = new_exon.attributes['ID'][0] = new_exon_ID
+                    new_exon.attributes['Parent'][0] = new_mRNA_ID
+
+                    ## update CDS ID and Parent
+                    new_CDS_ID = new_mRNA_ID +  ".CDS%02d"  % m
+                    new_CDS.id = new_CDS.attributes['ID'][0] = new_CDS_ID
+                    new_CDS.attributes['Parent'][0] = new_mRNA_ID
+
+                    # create new corresponding intron
+
+                    # print()
+                    # print(intron)
+                    # print()
+
+                    new_intron    = new_feature_from_template(intron, 'intron', strand)
+                    new_intron_ID = new_mRNA_ID +  ".intron%02d"  % m
+                    new_intron.id = new_intron.attributes['ID'][0] = new_intron_ID
+                    new_intron.attributes['Parent'][0] = new_mRNA_ID
+
+                    # print(new_exon)
+                    # print(new_CDS)
+                    # print(new_intron)
+
+                    new_features.extend([ new_exon,new_CDS,new_intron ])
+                    
+                    # move exon start downstream
+                    exon_start = i[1] + 1
+                    
+                    # update exon counter
+                    m = m+1
+
+                    # intron is 'used', no longer consider it
+                    # intron_borders.remove(i)
+                    true_introns.remove(intron)
+                    db.delete(intron)
+
+                if o[0] < o[1] < i[0]:
+                   pass
+
+            # update exon & CDS features
+            ## if orf has no introns
+            ## or if last exon of the orf
+            new_exon = new_feature_from_template(g, 'exon', strand)
+            new_CDS  = new_feature_from_template(g, 'CDS', strand)
+            new_exon.start = new_CDS.start = exon_start
+            new_exon.end   = new_CDS.end   = exon_end
+            # update exon ID and Parent
+            new_exon_ID = new_mRNA_ID + ".exon%02d" % m
+            new_exon.id = new_exon.attributes['ID'][0] = new_exon_ID
+            new_exon.attributes['Parent'][0] = new_mRNA_ID
+            # update CDS ID and Parent
+            new_CDS_ID = new_mRNA_ID +  ".CDS%02d"  % m
+            new_CDS.id = new_CDS.attributes['ID'][0] = new_CDS_ID
+            new_CDS.attributes['Parent'][0] = new_mRNA_ID
+
+            # print(new_exon)
+            # print(new_CDS)
+
+            new_features.extend([ new_gene, new_mRNA, new_exon, new_CDS ])
+
+            # update orf counter
+            n = n+1
 
 
     # delete the original + strand exon and CDS features
-    for f in db.children(g, featuretype=('exon','CDS','mRNA')):
+    # print('TO BE DELETED')
+    for f in db.children(g, featuretype=('exon','intron','CDS','mRNA')):
+        # if f.featuretype == 'intron':
+        #     print(f)
         db.delete(f)
     # delete the original + strand gene feature
     db.delete(g)
 
 # print(len(new_features))
+# print(new_features)
 
 # for f in new_features:
 #     print(f)
@@ -305,107 +509,10 @@ db.update(new_features)
 
 
 # print updated gff record in logical order
-for f in db.all_features(order_by=('seqid','start','attributes'), limit='tig00000012:1-400000'):
+for f in db.all_features(order_by=('seqid','start','attributes')):#, limit='tig00000012:1-400000'):
     if f.featuretype == 'gene':
-        print('\n', end='')
+        print()
         print(f)
     else:
         print(f)
 
-
-
-
-
-
-
-
-    # # else if there are true introns
-    # else:
-
-    #     # traverse gene sequence in steps of 3
-    #     # or by jumping over true introns until 
-    #     # start of next gene and create exons along the way
-    #     n = region_start - 1        # region_start is 1-indexed, n should be 0-indexed
-    #     exon_start = region_start   # initialize exon_start, this will be updated as we traverse the seq
-    #     exon_number = 1             # start exon counter
-    #     while n < region_end:
-
-    #         # if we encounter a true intron
-    #         if n >= intron_borders[0]:
-    #             # create new exon and CDS features
-    #             new_exon = new_feature_from_template(g, 'exon', strand)
-    #             new_CDS  = new_feature_from_template(g, 'CDS', strand)
-
-    #             # update new_exon properties
-    #             new_exon.start = exon_start
-    #             new_exon.end   = intron_borders[0] - 1      # intron_borders[0] is the start of the true intron
-    #             pattern        = "exon%02d" % exon_number 
-    #             new_exon.attributes['ID'][0] = new_exon.attributes['ID'][0].replace('exon01', pattern)
-    #             new_exon.id = new_exon.attributes['ID'][0]
-
-    #             # update new_CDS properties
-    #             new_CDS.start = exon_start
-    #             new_CDS.end   = intron_borders[0] - 1      # intron_borders[0] is the start of the true intron
-    #             new_CDS.frame = str(phase)
-    #             pattern       = "CDS%02d" % exon_number 
-    #             new_CDS.attributes['ID'][0] = new_CDS.attributes['ID'][0].replace('CDS01', pattern)
-    #             new_CDS.id = new_CDS.attributes['ID'][0]
-
-    #             # update exon counter
-    #             exon_number += 1
-
-#                 # add new exon to new_features
-#                 new_features.extend([new_exon, new_CDS])
-
-#                 # jump over intron to start of next exon and adjust phase
-#                 codon_remainder = (new_exon.end - new_exon.start + 1) % 3
-#                 phase = possible_phases[codon_remainder]
-#                 exon_start = intron_borders[1] + 1          # intron_borders[1] is the end of the true intron
-#                 n = exon_start + phase - 1
-
-#                 # delete first pair of start and end of true introns from intron_borders
-#                 # to ensure in next loop intron_borders[0] and [1] refer to the next pair
-#                 del intron_borders[:2]
-
-#             # if we encounter a STOP codon
-#             if contig[n:n+3] in ['TAG','TAA','TGA']:
-#                 # create new exon and CDS features
-#                 new_exon = new_feature_from_template(g, 'exon', strand)
-#                 new_CDS  = new_feature_from_template(g, 'CDS')
-
-#                 # # # update new_exon properties
-#                 # new_exon.start = exon_start
-#                 # new_exon.end   = n+3
-#                 # pattern        = "exon%02d" % exon_number 
-#                 # new_exon.attributes['ID'][0] = new_exon.attributes['ID'][0].replace('exon01', pattern)
-#                 # new_exon.id = new_exon.attributes['ID'][0]
-
-#                 # # update new_CDS properties
-#                 # new_CDS.start = exon_start
-#                 # new_CDS.end   = n+3
-#                 # new_CDS.frame = str(phase)
-#                 # pattern       = "CDS%02d" % exon_number 
-#                 # new_CDS.attributes['ID'][0] = new_CDS.attributes['ID'][0].replace('CDS01', pattern)
-#                 # new_CDS.id = new_CDS.attributes['ID'][0]
-
-
-
-                # # add new exon to new_features
-                # new_features.extend([new_exon,new_CDS])
-                
-                # # edit gene start and end coordinates
-                # new_gene.start = g.start                    # we assume start of gene feature is always correct
-                # new_gene.end   = n+3
-                # # add new gene to new_features
-                # new_features.append(new_gene)
-
-                # # we have reached the end of the gene,
-                # # stop traversing the sequence
-                # break
-
-
-
-
-            # else:
-                # n = n+3 
-             
